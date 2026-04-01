@@ -2,33 +2,50 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>BaaS Control Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Облачное приложение</title>
     <style>
         body { font-family: 'Inter', sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* Стили блока авторизации */
+        .auth-bar { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #007bff; }
+
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; }
+        .logout-btn { background: #ff4757; padding: 8px 15px; width: auto; font-size: 14px; }
         
-        button { cursor: pointer; transition: 0.3s; font-weight: 600; border-radius: 6px; border: none; }
-        #mainBtn { background: #007bff; color: white; padding: 12px; width: 100%; margin-top: 10px; }
-        #mainBtn:hover { background: #0056b3; }
-        #filterBtn { background: #6c757d; color: white; padding: 10px; width: 100%; margin-top: 10px; font-size: 13px; }
-        
-        .post { background: #fff; border: 1px solid #eaeaea; padding: 15px; margin-top: 15px; border-radius: 8px; width: 100%; max-width: 500px; position: relative; }
-        .like-btn { background: #f8f9fa; padding: 5px 12px; border-radius: 20px; font-size: 14px; margin-right: 8px; }
-        .like-btn:hover { background: #e2e6ea; }
-        .del-btn { background: #fff0f0; color: #dc3545; padding: 5px 12px; border-radius: 20px; font-size: 14px; float: right; }
-        .del-btn:hover { background: #ffc9c9; }
-        .time { font-size: 11px; color: #999; float: right; margin-left: 10px; }
+        #filterBtn { background: #6c757d; margin-top: 10px; font-size: 13px; }
+
+        .post { background: #fff; border: 1px solid #eaeaea; padding: 15px; margin-top: 15px; border-radius: 8px; width: 100%; max-width: 500px; }
+        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .post-avatar { width: 30px; height: 30px; border-radius: 50%; }
+        .like-btn { cursor: pointer; border: none; background: #f8f9fa; padding: 5px 12px; border-radius: 20px; margin-top: 10px; }
+        .del-btn { background: #fff0f0; color: #dc3545; padding: 5px 12px; border-radius: 20px; font-size: 14px; float: right; margin-top: 10px; cursor: pointer; border: none; }
+        .time { font-size: 11px; color: #999; margin-left: auto; }
         .status-bar { font-size: 12px; color: #666; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h3>Панель управления BaaS</h3>
+    <div id="authSection" class="container" style="max-width: 500px; text-align: center;">
+        <button id="loginBtn">Войти через Google</button>
+        <div id="userInfo" style="display: none;" class="auth-bar">
+            <img id="userPhoto" class="user-avatar" src="" alt="Avatar">
+            <span id="userName" style="font-weight: bold;"></span>
+            <button id="logoutBtn" class="logout-btn">Выйти</button>
+        </div>
+    </div>
+
+    <div id="messageForm" class="container" style="display: none;">
+        <h3>Создать запись</h3>
         <div class="status-bar" id="statusText">Режим: Все записи</div>
-        <input type="text" id="name" placeholder="Имя профиля">
-        <input type="email" id="email" placeholder="Рабочий Email">
+        <input type="text" id="name" placeholder="Имя профиля" readonly>
+        <input type="email" id="email" placeholder="Ваш Email" readonly>
+        <input type="text" id="content" placeholder="Что у вас нового?">
         
         <button id="mainBtn">Опубликовать в облако</button>
         <button id="filterBtn" onclick="toggleFilter()">Показать популярные (5+ 👍)</button>
@@ -42,8 +59,11 @@
             getFirestore, collection, addDoc, query, orderBy, onSnapshot, 
             serverTimestamp, updateDoc, doc, increment, deleteDoc, where 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { 
+            getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-        // КОНФИГУРАЦИЯ
+        // ТВОЯ КОНФИГУРАЦИЯ
         const firebaseConfig = {
             apiKey: "AIzaSyB7bs-_BvEJKV0U3f9_klBTkI25igRLjTI",
             authDomain: "sosulka-25c8c.firebaseapp.com",
@@ -56,11 +76,48 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const messageForm = document.getElementById('messageForm');
 
         let isFilterActive = false;
         let unsubscribe = null;
 
-        // 1. ФУНКЦИЯ: УДАЛЕНИЕ (НОВАЯ)
+        // --- ЛОГИКА АВТОРИЗАЦИИ ---
+        loginBtn.onclick = () => signInWithPopup(auth, provider);
+        logoutBtn.onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                messageForm.style.display = 'block';
+                
+                document.getElementById('userName').innerText = user.displayName;
+                document.getElementById('userPhoto').src = user.photoURL;
+                document.getElementById('name').value = user.displayName;
+                document.getElementById('email').value = user.email;
+            } else {
+                loginBtn.style.display = 'block';
+                userInfo.style.display = 'none';
+                messageForm.style.display = 'none';
+            }
+        });
+
+        // --- ЛОГИКА РАБОТЫ С ДАННЫМИ ---
+
+        window.processLike = async (id) => {
+            try {
+                await updateDoc(doc(db, "requests", id), { likes: increment(1) });
+            } catch (e) {
+                console.error("Ошибка обновления:", e.message);
+            }
+        };
+
         window.deletePost = async (id) => {
             if (confirm("Удалить это сообщение навсегда?")) {
                 try {
@@ -71,7 +128,6 @@
             }
         };
 
-        // 2. ФУНКЦИЯ: ПЕРЕКЛЮЧЕНИЕ ФИЛЬТРАЦИИ (НОВАЯ)
         window.toggleFilter = () => {
             isFilterActive = !isFilterActive;
             const btn = document.getElementById('filterBtn');
@@ -80,52 +136,40 @@
             btn.innerText = isFilterActive ? "Показать все" : "Показать популярные (5+ 👍)";
             status.innerText = isFilterActive ? "Режим: Только популярные" : "Режим: Все записи";
             
-            startListening(); // Перезапускаем поток данных с новыми условиями
+            startListening();
         };
 
-        // ЛАЙКИ
-        window.processLike = async (id) => {
-            const docRef = doc(db, "requests", id);
-            try {
-                await updateDoc(docRef, { likes: increment(1) });
-            } catch (e) {
-                console.error("Ошибка обновления:", e.message);
-            }
-        };
-
-        // ЗАПИСЬ
         document.getElementById('mainBtn').onclick = async () => {
+            const content = document.getElementById('content').value;
+            if (!content) return alert("Введите текст сообщения!");
+
             const btn = document.getElementById('mainBtn');
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-
-            if(!name || !email) return alert("Заполните поля!");
-
             btn.disabled = true;
+
             try {
                 await addDoc(collection(db, "requests"), {
-                    name: name,
-                    email: email,
+                    name: auth.currentUser.displayName,
+                    email: auth.currentUser.email,
+                    photo: auth.currentUser.photoURL,
+                    text: content,
                     likes: 0,
                     timestamp: serverTimestamp()
                 });
-                document.getElementById('email').value = "";
+                document.getElementById('content').value = "";
             } catch (e) {
-                alert("Ошибка безопасности: Проверьте правила Firestore.");
+                alert("Ошибка безопасности! Проверьте правила (Rules) в Firebase.");
             }
             btn.disabled = false;
         };
 
-        // REAL-TIME ПОТОК (Улучшен для фильтрации)
+        // REAL-TIME ОБНОВЛЕНИЕ ЛЕНТЫ
         function startListening() {
-            if (unsubscribe) unsubscribe(); // Останавливаем старую подписку
+            if (unsubscribe) unsubscribe();
 
             let q;
             if (isFilterActive) {
-                // Если фильтр включен: только записи с 5+ лайками
                 q = query(collection(db, "requests"), where("likes", ">=", 5), orderBy("likes", "desc"));
             } else {
-                // Обычный режим: все записи по времени
                 q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
             }
 
@@ -138,9 +182,12 @@
                     
                     feed.innerHTML += `
                         <div class="post">
-                            <span class="time">${time}</span>
-                            <b>${data.name}</b>
-                            <p style="margin: 5px 0; color: #444;">${data.email}</p>
+                            <div class="post-header">
+                                <img src="${data.photo || ''}" class="post-avatar">
+                                <b>${data.name}</b>
+                                <span class="time">${time}</span>
+                            </div>
+                            <p style="margin: 5px 0; color: #444;">${data.text || data.email}</p>
                             <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${data.likes || 0}</button>
                             <button class="del-btn" onclick="deletePost('${doc.id}')">Удалить</button>
                         </div>
@@ -149,7 +196,6 @@
             });
         }
 
-        // Запуск при старте
         startListening();
     </script>
 </body>
