@@ -3,44 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud App (DM Fix)</title>
+    <title>Cloud App (Full DM Version)</title>
     <style>
-        body { font-family: 'Inter', -apple-system, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #1c1e21; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #1c1e21; }
         .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; box-sizing: border-box; }
         
-        .auth-bar { background: white; padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 12px; }
-        .user-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #007bff; object-fit: cover; }
+        /* Профиль */
+        .auth-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #007bff; object-fit: cover; }
         
         input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; }
-        input[type="text"]:focus { border-color: #007bff; }
-
-        .file-upload-wrapper { margin: 15px 0; }
-        #imageInput { display: none; } 
-        .file-label { display: block; background: #f0f2f5; color: #4b4f56; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; border: 1px dashed #ced4da; text-align: center; }
-        
-        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; }
+        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; transition: 0.2s; }
         button:hover { background: #0056b3; }
-        
-        .logout-btn { background: #f2f2f2; color: #444; width: auto; font-size: 13px; padding: 6px 12px; }
-        
-        /* ЧАТ */
-        #chatSection { display: none; border-top: 2px solid #eee; margin-top: 20px; padding-top: 15px; }
-        .user-selector { display: flex; gap: 12px; overflow-x: auto; padding: 10px 5px; scrollbar-width: none; }
-        .user-card { cursor: pointer; text-align: center; min-width: 65px; transition: 0.2s; }
-        .user-card img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; object-fit: cover; }
-        .user-card.active img { border-color: #007bff; transform: scale(1.1); }
-        .user-card div { font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .logout-btn { background: #f2f2f2; color: #dc3545; width: auto; padding: 5px 10px; font-size: 12px; }
 
-        .chat-window { height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 10px; padding: 12px; margin: 10px 0; background: #f9f9f9; display: flex; flex-direction: column; gap: 8px; }
-        .msg { padding: 8px 12px; border-radius: 14px; max-width: 75%; font-size: 14px; line-height: 1.4; }
+        /* Чат */
+        .user-selector { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+        .user-card { cursor: pointer; text-align: center; min-width: 60px; filter: grayscale(1); transition: 0.3s; }
+        .user-card.active { filter: grayscale(0); transform: scale(1.1); }
+        .user-card img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .user-card div { font-size: 10px; margin-top: 4px; }
+
+        .chat-window { height: 250px; overflow-y: auto; border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px; background: #fafafa; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
         .msg.sent { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg.received { background: #e4e6eb; color: #1c1e21; align-self: flex-start; border-bottom-left-radius: 2px; }
 
-        /* ПОСТЫ */
-        .post { background: #fff; border-radius: 12px; padding: 16px; margin-top: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box; }
+        /* Посты */
+        .post { background: white; border-radius: 12px; padding: 16px; margin-top: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box; }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .post-img { width: 100%; border-radius: 8px; margin-top: 10px; display: block; }
-        .del-btn { color: #dc3545; background: none; float: right; font-size: 12px; cursor: pointer; border: none; margin-top: 10px; }
+        .del-btn { color: #dc3545; background: none; float: right; cursor: pointer; border: none; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -54,38 +47,36 @@
         </div>
     </div>
 
-    <div id="messageForm" class="container" style="display: none;">
-        <h3 style="margin-top: 0;">Создать запись</h3>
-        <input type="text" id="content" placeholder="Что у вас нового?">
+    <div id="mainApp" style="display: none; width: 100%; max-width: 500px;">
         
-        <div class="file-upload-wrapper">
-            <label for="imageInput" class="file-label">📷 Прикрепить фото (до 1МБ)</label>
-            <input type="file" id="imageInput" accept="image/*">
-            <div id="fileName" style="font-size: 11px; color: #007bff; margin-top: 5px; text-align: center;"></div>
+        <div class="container">
+            <h3 style="margin: 0 0 10px 0;">Создать запись</h3>
+            <input type="text" id="postText" placeholder="Что у вас нового?">
+            <input type="file" id="imageInput" accept="image/*" style="font-size: 12px; margin: 10px 0;">
+            <button id="publishBtn">Опубликовать</button>
         </div>
-        
-        <button id="mainBtn">Опубликовать</button>
 
-        <div id="chatSection">
+        <div class="container">
             <h4 style="margin: 0 0 10px 0;">Личные сообщения</h4>
             <div id="userList" class="user-selector"></div>
-            <div id="chatActive" style="display: none;">
+            
+            <div id="chatArea" style="display: none;">
                 <div id="chatWindow" class="chat-window"></div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="chatInput" placeholder="Сообщение...">
-                    <button id="sendMsgBtn" style="width: 60px; padding: 0;">📎</button>
+                    <input type="text" id="chatInput" placeholder="Напишите сообщение...">
+                    <button id="sendMsgBtn" style="width: 60px;">➤</button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="feed" style="width: 100%; max-width: 500px;"></div>
+        <div id="feed"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, query, orderBy, onSnapshot, 
-            serverTimestamp, updateDoc, doc, increment, deleteDoc 
+            serverTimestamp, doc, deleteDoc 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
         import { 
             getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
@@ -105,49 +96,42 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        let selectedUserEmail = null;
+        let selectedUser = null;
         let chatUnsub = null;
 
+        // --- УПРАВЛЕНИЕ ВХОДОМ ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('messageForm').style.display = 'block';
-                document.getElementById('chatSection').style.display = 'block';
+                document.getElementById('mainApp').style.display = 'block';
                 document.getElementById('userName').innerText = user.displayName;
                 document.getElementById('userPhoto').src = user.photoURL;
-                loadUserList();
-                startFeedListening();
+                loadUsers();
+                loadFeed();
             } else {
                 document.getElementById('loginBtn').style.display = 'block';
                 document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('messageForm').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'none';
             }
         });
 
         document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-        const toBase64 = file => new Promise((res, rej) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => res(reader.result);
-            reader.onerror = e => rej(e);
-        });
-
-        document.getElementById('imageInput').onchange = e => {
-            if(e.target.files[0]) document.getElementById('fileName').innerText = e.target.files[0].name;
-        };
-
-        document.getElementById('mainBtn').onclick = async () => {
-            const text = document.getElementById('content').value;
+        // --- ЛЕНТА И ПОСТЫ ---
+        document.getElementById('publishBtn').onclick = async () => {
+            const text = document.getElementById('postText').value;
             const file = document.getElementById('imageInput').files[0];
             if (!text && !file) return;
 
-            let imgData = null;
+            let base64 = null;
             if (file) {
-                if (file.size > 1024 * 1024) return alert("Файл слишком большой!");
-                imgData = await toBase64(file);
+                const reader = new FileReader();
+                base64 = await new Promise(r => {
+                    reader.onload = () => r(reader.result);
+                    reader.readAsDataURL(file);
+                });
             }
 
             await addDoc(collection(db, "requests"), {
@@ -155,98 +139,97 @@
                 email: auth.currentUser.email,
                 photo: auth.currentUser.photoURL,
                 text: text,
-                image: imgData,
+                image: base64,
                 likes: 0,
-                timestamp: serverTimestamp()
+                time: serverTimestamp()
             });
-            document.getElementById('content').value = "";
+            document.getElementById('postText').value = "";
             document.getElementById('imageInput').value = "";
-            document.getElementById('fileName').innerText = "";
         };
 
-        function loadUserList() {
+        function loadFeed() {
+            onSnapshot(query(collection(db, "requests"), orderBy("time", "desc")), (snap) => {
+                const feed = document.getElementById('feed');
+                feed.innerHTML = "";
+                snap.forEach(d => {
+                    const p = d.data();
+                    feed.innerHTML += `
+                        <div class="post">
+                            <div class="post-header">
+                                <img src="${p.photo}" style="width:30px;height:30px;border-radius:50%">
+                                <b style="font-size:14px;">${p.name}</b>
+                                ${auth.currentUser.email === p.email ? `<button class="del-btn" onclick="window.delPost('${d.id}')">Удалить</button>` : ''}
+                            </div>
+                            <div>${p.text || ''}</div>
+                            ${p.image ? `<img src="${p.image}" class="post-img">` : ''}
+                        </div>`;
+                });
+            });
+        }
+
+        // --- ЛИЧНЫЕ СООБЩЕНИЯ ---
+        function loadUsers() {
             onSnapshot(collection(db, "requests"), (snap) => {
                 const users = {};
                 snap.forEach(d => {
                     const data = d.data();
-                    // Собираем всех, КРОМЕ текущего пользователя
                     if(data.email !== auth.currentUser.email) {
                         users[data.email] = { name: data.name, photo: data.photo };
                     }
                 });
-                
                 const list = document.getElementById('userList');
                 list.innerHTML = "";
                 Object.keys(users).forEach(email => {
                     const div = document.createElement('div');
-                    div.className = `user-card ${selectedUserEmail === email ? 'active' : ''}`;
+                    div.className = `user-card ${selectedUser === email ? 'active' : ''}`;
                     div.innerHTML = `<img src="${users[email].photo}"><div>${users[email].name.split(' ')[0]}</div>`;
                     div.onclick = () => {
-                        selectedUserEmail = email;
-                        document.getElementById('chatActive').style.display = 'block';
-                        loadUserList(); 
-                        startChatListening();
+                        selectedUser = email;
+                        document.getElementById('chatArea').style.display = 'block';
+                        loadUsers();
+                        startChat();
                     };
                     list.appendChild(div);
                 });
             });
         }
 
-        function startChatListening() {
+        function startChat() {
             if (chatUnsub) chatUnsub();
-            const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+            const q = query(collection(db, "messages"), orderBy("time", "asc"));
             chatUnsub = onSnapshot(q, (snap) => {
                 const win = document.getElementById('chatWindow');
                 win.innerHTML = "";
                 snap.forEach(d => {
                     const m = d.data();
-                    const isRelevant = (m.from === auth.currentUser.email && m.to === selectedUserEmail) || 
-                                     (m.from === selectedUserEmail && m.to === auth.currentUser.email);
-                    if (isRelevant) {
-                        const side = m.from === auth.currentUser.email ? 'sent' : 'received';
+                    const isMine = (m.from === auth.currentUser.email && m.to === selectedUser);
+                    const isTheirs = (m.from === selectedUser && m.to === auth.currentUser.email);
+                    
+                    if (isMine || isTheirs) {
+                        const side = isMine ? 'sent' : 'received';
                         win.innerHTML += `<div class="msg ${side}">${m.text}</div>`;
                     }
                 });
                 win.scrollTop = win.scrollHeight;
-            });
+            }, (err) => console.error("Ошибка чата:", err));
         }
 
         document.getElementById('sendMsgBtn').onclick = async () => {
             const input = document.getElementById('chatInput');
-            if (!input.value || !selectedUserEmail) return;
-            await addDoc(collection(db, "messages"), {
-                from: auth.currentUser.email,
-                to: selectedUserEmail,
-                text: input.value,
-                timestamp: serverTimestamp()
-            });
-            input.value = "";
+            if (!input.value || !selectedUser) return;
+            
+            try {
+                await addDoc(collection(db, "messages"), {
+                    from: auth.currentUser.email,
+                    to: selectedUser,
+                    text: input.value,
+                    time: serverTimestamp()
+                });
+                input.value = "";
+            } catch (e) { alert("Ошибка отправки! Проверь Rules."); }
         };
 
-        function startFeedListening() {
-            onSnapshot(query(collection(db, "requests"), orderBy("timestamp", "desc")), (snap) => {
-                const feed = document.getElementById('feed');
-                feed.innerHTML = "";
-                snap.forEach(d => {
-                    const data = d.data();
-                    const id = d.id;
-                    feed.innerHTML += `
-                        <div class="post">
-                            <div class="post-header">
-                                <img src="${data.photo}" class="user-avatar">
-                                <b>${data.name}</b>
-                            </div>
-                            <div style="font-size:15px;">${data.text || ''}</div>
-                            ${data.image ? `<img src="${data.image}" class="post-img">` : ''}
-                            <button class="logout-btn" style="margin-top:10px;" onclick="window.likePost('${id}')">👍 ${data.likes || 0}</button>
-                            ${auth.currentUser.email === data.email ? `<button class="del-btn" onclick="window.delPost('${id}')">Удалить</button>` : ''}
-                        </div>`;
-                });
-            });
-        }
-
-        window.likePost = id => updateDoc(doc(db, "requests", id), { likes: increment(1) });
-        window.delPost = id => confirm("Удалить пост?") && deleteDoc(doc(db, "requests", id));
+        window.delPost = (id) => confirm("Удалить запись?") && deleteDoc(doc(db, "requests", id));
 
     </script>
 </body>
