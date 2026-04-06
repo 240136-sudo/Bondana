@@ -79,11 +79,11 @@ onAuthStateChanged(auth, async (user) => {
 
         userName.innerText = user.displayName;
 
-        // сохранить пользователя
+        // FIX: merge чтобы не перезаписывать
         await setDoc(doc(db, "users", user.uid), {
             name: user.displayName,
             email: user.email
-        });
+        }, { merge: true });
 
         loadUsers();
 
@@ -105,6 +105,11 @@ async function loadUsers() {
         userSelect.innerHTML += `<option value="${d.id}">${u.name}</option>`;
     });
 
+    // FIX: если есть пользователи — выбрать первого
+    if (userSelect.options.length > 0) {
+        userSelect.selectedIndex = 0;
+    }
+
     startListeningDM();
 }
 
@@ -113,7 +118,8 @@ sendDmBtn.onclick = async () => {
     const text = dmInput.value;
     const receiverId = userSelect.value;
 
-    if (!text) return;
+    // FIX: защита
+    if (!text || !receiverId) return;
 
     await addDoc(collection(db, "direct_messages"), {
         senderId: auth.currentUser.uid,
@@ -136,6 +142,10 @@ function startListeningDM() {
     );
 
     unsubscribeDM = onSnapshot(q, (snapshot) => {
+
+        // FIX: если не выбран пользователь
+        if (!userSelect.value) return;
+
         chatBox.innerHTML = "";
 
         snapshot.forEach(docSnap => {
