@@ -3,68 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Cloud App</title>
+    <title>Cloud DM App</title>
     <style>
+        /* ... (ваши стили) ... */
         body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         
-        /* Чат */
-        .users-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .user-card { text-align: center; cursor: pointer; min-width: 60px; }
-        .user-card img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #007bff; }
-        .chat-msgs { height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: #fafafa; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .msg { padding: 8px 12px; border-radius: 12px; font-size: 13px; max-width: 80%; }
-        .msg.sent { align-self: flex-end; background: #007bff; color: white; }
-        .msg.received { align-self: flex-start; background: #e4e6eb; }
+        /* Стили для DM */
+        .users-list { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        .user-card { text-align: center; cursor: pointer; min-width: 70px; }
+        .user-card img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; }
+        .user-card.active img { border-color: #007bff; }
+        .user-card span { font-size: 11px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* Посты */
-        .post { background: white; border-radius: 12px; padding: 16px; margin-top: 15px; width: 100%; max-width: 500px; position: relative; }
-        .post img { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .post-header { display: flex; justify-content: space-between; align-items: center; }
-        .btn-del { color: #ff4d4d; cursor: pointer; font-size: 12px; }
-        .like-btn { cursor: pointer; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 5px 10px; border-radius: 20px; display: inline-block; margin-top: 10px; }
+        .chat-box { height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; position: relative; }
+        .msg.sent { align-self: flex-end; background: #007bff; color: white; }
+        .msg.received { align-self: flex-start; background: #e4e6eb; color: black; }
         
+        .dm-input-area { display: flex; gap: 8px; }
         .hidden { display: none !important; }
-        input[type="text"], button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; }
-        button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="authSection" class="container">
         <button id="loginBtn">Войти через Google</button>
-        <div id="userInfo" class="hidden" style="display:flex; align-items:center; gap:10px;">
+        <div id="userInfo" class="hidden" style="display: flex; align-items: center; gap: 10px;">
             <img id="userPhoto" style="width:35px; border-radius:50%">
-            <b id="userName"></b>
-            <button id="logoutBtn" style="width:auto; background:#eee; color:#333;">Выйти</button>
+            <span id="userName" style="font-weight:bold"></span>
+            <button id="logoutBtn" style="width:auto; padding: 5px 10px;">Выйти</button>
         </div>
     </div>
 
     <div id="dmSection" class="container hidden">
-        <h4>Личные сообщения</h4>
+        <h4 style="margin:0 0 10px 0;">Выберите собеседника:</h4>
         <div id="usersList" class="users-list"></div>
-        <div id="activeChat" class="hidden">
-            <b id="chatTitle"></b>
-            <div id="chatMsgs" class="chat-msgs"></div>
-            <div style="display:flex; gap:5px">
-                <input type="text" id="dmInput" placeholder="Сообщение...">
-                <button id="sendDmBtn" style="width:50px">✈️</button>
+        
+        <div id="chatInterface" class="hidden">
+            <h5 id="chatWithTitle">Чат с: ...</h5>
+            <div id="chatBox" class="chat-box"></div>
+            <div class="dm-input-area">
+                <input type="text" id="dmInput" placeholder="Ваше сообщение...">
+                <button id="sendDmBtn" style="width: auto;">✈️</button>
             </div>
         </div>
     </div>
 
-    <div id="postForm" class="container hidden">
-        <input type="text" id="content" placeholder="Что нового?">
-        <input type="file" id="imageInput" accept="image/*">
-        <button id="mainBtn">Опубликовать</button>
-    </div>
-
-    <div id="feed"></div>
+    <div id="messageForm" class="container hidden">
+        </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment, deleteDoc, setDoc, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { 
+            getFirestore, collection, addDoc, query, orderBy, onSnapshot, 
+            serverTimestamp, doc, setDoc, where, or, and
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { 
+            getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB7bs-_BvEJKV0U3f9_klBTkI25igRLjTI",
@@ -81,124 +78,100 @@
         const provider = new GoogleAuthProvider();
 
         let selectedUserId = null;
-        let dmUnsub = null;
+        let dmUnsubscribe = null;
 
-        const getChatKey = (id1, id2) => [id1, id2].sort().join('_');
-
+        // Авторизация
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                document.getElementById('authSection').querySelector('button').classList.add('hidden');
+                // Сохраняем пользователя в список доступных для чата
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    name: user.displayName,
+                    photo: user.photoURL,
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+
+                document.getElementById('authSection').querySelector('#loginBtn').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
-                document.querySelectorAll('.hidden').forEach(el => el.classList.remove('hidden'));
+                document.getElementById('dmSection').classList.remove('hidden');
                 document.getElementById('userName').innerText = user.displayName;
                 document.getElementById('userPhoto').src = user.photoURL;
-
-                await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, photo: user.photoURL }, { merge: true });
+                
                 loadUsers();
-                loadFeed();
             } else {
-                location.reload();
+                location.reload(); // Для простоты при выходе
             }
         });
 
         document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-        // --- ЛОГИКА ЛЕНТЫ ---
-        async function uploadImage(file) {
-            const formData = new FormData();
-            formData.append('image', file);
-            const res = await fetch('https://api.imgur.com/3/image', {
-                method: 'POST',
-                headers: { Authorization: 'Client-ID YOUR_IMGUR_CLIENT_ID' }, // Вставь свой ID если есть
-                body: formData
-            });
-            const data = await res.json();
-            return data.data.link;
-        }
-
-        document.getElementById('mainBtn').onclick = async () => {
-            const text = document.getElementById('content').value;
-            const file = document.getElementById('imageInput').files[0];
-            let imgUrl = null;
-            if (file) imgUrl = await uploadImage(file);
-
-            await addDoc(collection(db, "requests"), {
-                name: auth.currentUser.displayName,
-                text: text,
-                image: imgUrl,
-                likes: 0,
-                email: auth.currentUser.email,
-                timestamp: serverTimestamp()
-            });
-            document.getElementById('content').value = "";
-        };
-
-        function loadFeed() {
-            onSnapshot(query(collection(db, "requests"), orderBy("timestamp", "desc")), (snap) => {
-                const feed = document.getElementById('feed');
-                feed.innerHTML = "";
-                snap.forEach(d => {
-                    const p = d.data();
-                    const isMy = p.email === auth.currentUser.email;
-                    feed.innerHTML += `
-                        <div class="post">
-                            <div class="post-header">
-                                <b>${p.name}</b>
-                                ${isMy ? `<span class="btn-del" onclick="deletePost('${d.id}')">Удалить</span>` : ''}
-                            </div>
-                            <p>${p.text}</p>
-                            ${p.image ? `<img src="${p.image}">` : ''}
-                            <div class="like-btn" onclick="likePost('${d.id}')">❤️ ${p.likes || 0}</div>
-                        </div>`;
-                });
-            });
-        }
-
-        window.likePost = (id) => updateDoc(doc(db, "requests", id), { likes: increment(1) });
-        window.deletePost = (id) => { if(confirm("Удалить?")) deleteDoc(doc(db, "requests", id)); };
-
-        // --- ЛОГИКА ЧАТА ---
+        // Загрузка списка пользователей
         function loadUsers() {
-            onSnapshot(collection(db, "users"), (snap) => {
+            onSnapshot(collection(db, "users"), (snapshot) => {
                 const list = document.getElementById('usersList');
                 list.innerHTML = "";
-                snap.forEach(d => {
-                    const u = d.data();
-                    if (u.uid === auth.currentUser.uid) return;
-                    list.innerHTML += `<div class="user-card" onclick="openChat('${u.uid}', '${u.name}')"><img src="${u.photo}"><span>${u.name.split(' ')[0]}</span></div>`;
+                snapshot.forEach(doc => {
+                    const userData = doc.data();
+                    if (userData.uid === auth.currentUser.uid) return; // Не показывать себя
+
+                    const div = document.createElement('div');
+                    div.className = `user-card ${selectedUserId === userData.uid ? 'active' : ''}`;
+                    div.innerHTML = `<img src="${userData.photo}"><span>${userData.name.split(' ')[0]}</span>`;
+                    div.onclick = () => startChat(userData);
+                    list.appendChild(div);
                 });
             });
         }
 
-        window.openChat = (id, name) => {
-            selectedUserId = id;
-            document.getElementById('activeChat').classList.remove('hidden');
-            document.getElementById('chatTitle').innerText = "Чат с: " + name;
-            if (dmUnsub) dmUnsub();
-            dmUnsub = onSnapshot(query(collection(db, "direct_messages"), where("chatKey", "==", getChatKey(auth.currentUser.uid, id)), orderBy("timestamp", "asc")), (snap) => {
-                const box = document.getElementById('chatMsgs');
+        // Открытие чата
+        function startChat(targetUser) {
+            selectedUserId = targetUser.uid;
+            document.getElementById('chatInterface').classList.remove('hidden');
+            document.getElementById('chatWithTitle').innerText = "Чат с: " + targetUser.name;
+            loadMessages();
+        }
+
+        // Загрузка сообщений (DM)
+        function loadMessages() {
+            if (dmUnsubscribe) dmUnsubscribe();
+
+            // Сложный запрос: сообщения где я отправитель И он получатель ИЛИ наоборот
+            const q = query(
+                collection(db, "direct_messages"),
+                where("chatKey", "in", [
+                    `${auth.currentUser.uid}_${selectedUserId}`,
+                    `${selectedUserId}_${auth.currentUser.uid}`
+                ]),
+                orderBy("timestamp", "asc")
+            );
+
+            dmUnsubscribe = onSnapshot(q, (snapshot) => {
+                const box = document.getElementById('chatBox');
                 box.innerHTML = "";
-                snap.forEach(mDoc => {
-                    const m = mDoc.data();
-                    const cls = m.senderId === auth.currentUser.uid ? 'sent' : 'received';
-                    box.innerHTML += `<div class="msg ${cls}">${m.text}</div>`;
+                snapshot.forEach(doc => {
+                    const m = doc.data();
+                    const side = m.senderId === auth.currentUser.uid ? 'sent' : 'received';
+                    box.innerHTML += `<div class="msg ${side}">${m.text}</div>`;
                 });
                 box.scrollTop = box.scrollHeight;
             });
-        };
+        }
 
+        // Отправка ЛС
         document.getElementById('sendDmBtn').onclick = async () => {
-            const inp = document.getElementById('dmInput');
-            if (!inp.value || !selectedUserId) return;
+            const text = document.getElementById('dmInput').value;
+            if (!text || !selectedUserId) return;
+
             await addDoc(collection(db, "direct_messages"), {
-                text: inp.value,
+                text: text,
                 senderId: auth.currentUser.uid,
                 receiverId: selectedUserId,
-                chatKey: getChatKey(auth.currentUser.uid, selectedUserId),
+                chatKey: `${auth.currentUser.uid}_${selectedUserId}`, // Ключ для поиска
                 timestamp: serverTimestamp()
             });
-            inp.value = "";
+
+            document.getElementById('dmInput').value = "";
         };
     </script>
 </body>
