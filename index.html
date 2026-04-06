@@ -5,24 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bondana Cloud Chat</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; box-sizing: border-box; }
-        
-        /* Профиль */
-        .header { display: flex; align-items: center; gap: 15px; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #007bff; }
-        
-        /* Чат и пользователи */
-        .user-list { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .user-item { cursor: pointer; text-align: center; min-width: 70px; opacity: 0.6; }
-        .user-item.active { opacity: 1; font-weight: bold; }
-        .user-item img { width: 45px; height: 45px; border-radius: 50%; }
-
+        .user-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #007bff; }
+        .user-list { display: flex; gap: 12px; overflow-x: auto; padding: 10px 0; border-bottom: 1px solid #eee; min-height: 80px; }
+        .user-item { cursor: pointer; text-align: center; min-width: 70px; opacity: 0.6; transition: 0.3s; }
+        .user-item.active { opacity: 1; transform: scale(1.1); font-weight: bold; }
         .chat-window { height: 300px; overflow-y: auto; background: #f9f9f9; border-radius: 8px; padding: 15px; margin: 15px 0; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 14px; word-wrap: break-word; }
         .msg.sent { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg.received { background: #e4e6eb; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-
         input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0; box-sizing: border-box; }
         button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
         .post { background: white; padding: 15px; border-radius: 12px; margin-top: 15px; width: 100%; max-width: 500px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -32,17 +24,15 @@
 <body>
 
     <div id="loginSection" class="container" style="text-align: center;">
+        <h2>Bondana App</h2>
         <button id="btnGoogle">Войти через Google</button>
     </div>
 
     <div id="mainSection" style="display: none; width: 100%; max-width: 500px;">
-        <div class="container header">
-            <img id="myImg" class="avatar">
-            <div style="flex-grow: 1;">
-                <b id="myName"></b><br>
-                <small id="myEmail"></small>
-            </div>
-            <button id="btnExit" style="width: auto; background: #eee; color: #555; padding: 5px 10px;">Выйти</button>
+        <div class="container" style="display: flex; align-items: center; gap: 15px;">
+            <img id="myImg" class="user-avatar">
+            <div style="flex-grow: 1;"><b id="myName"></b></div>
+            <button id="btnExit" style="width: auto; background: #eee; color: red; padding: 5px 10px; font-size: 12px;">Выйти</button>
         </div>
 
         <div class="container">
@@ -51,7 +41,7 @@
             <div id="chatArea" style="display: none;">
                 <div id="chatBox" class="chat-window"></div>
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" id="msgText" placeholder="Напишите сообщение...">
+                    <input type="text" id="msgText" placeholder="Сообщение...">
                     <button id="btnSendMsg" style="width: 50px;">➤</button>
                 </div>
             </div>
@@ -93,9 +83,8 @@
             if (user) {
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'block';
-                document.getElementById('myImg').src = user.photoURL;
-                document.getElementById('myName').innerText = user.displayName;
-                document.getElementById('myEmail').innerText = user.email;
+                document.getElementById('myImg').src = user.photoURL || '';
+                document.getElementById('myName').innerText = user.displayName || 'Пользователь';
                 loadUsers();
                 loadPosts();
             } else {
@@ -107,12 +96,11 @@
         document.getElementById('btnGoogle').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btnExit').onclick = () => signOut(auth);
 
-        // Работа с постами
+        // ПОСТЫ
         document.getElementById('btnPost').onclick = async () => {
             const text = document.getElementById('postInp').value;
             const file = document.getElementById('fileInp').files[0];
             let base64 = null;
-
             if (file) {
                 base64 = await new Promise(r => {
                     const reader = new FileReader();
@@ -120,7 +108,6 @@
                     reader.readAsDataURL(file);
                 });
             }
-
             await addDoc(collection(db, "requests"), {
                 uName: auth.currentUser.displayName,
                 uEmail: auth.currentUser.email,
@@ -130,6 +117,7 @@
                 createdAt: serverTimestamp()
             });
             document.getElementById('postInp').value = "";
+            document.getElementById('fileInp').value = "";
         };
 
         function loadPosts() {
@@ -138,24 +126,26 @@
                 area.innerHTML = "";
                 snap.forEach(doc => {
                     const data = doc.data();
-                    area.innerHTML += `
-                        <div class="post">
-                            <b>${data.uName}</b>
-                            <p>${data.text || ''}</p>
-                            ${data.img ? `<img src="${data.img}">` : ''}
-                        </div>`;
+                    area.innerHTML += `<div class="post">
+                        <b>${data.uName || 'Аноним'}</b>
+                        <p>${data.text || ''}</p>
+                        ${data.img ? `<img src="${data.img}">` : ''}
+                    </div>`;
                 });
             });
         }
 
-        // Работа с пользователями и чатом
+        // КОНТАКТЫ (защита от ошибок split)
         function loadUsers() {
             onSnapshot(collection(db, "requests"), snap => {
                 const users = {};
                 snap.forEach(d => {
                     const u = d.data();
-                    if (u.uEmail !== auth.currentUser.email) {
-                        users[u.uEmail] = { name: u.uName, photo: u.uPhoto };
+                    if (u.uEmail && u.uEmail !== auth.currentUser.email) {
+                        users[u.uEmail] = { 
+                            name: u.uName || 'Пользователь', 
+                            photo: u.uPhoto || '' 
+                        };
                     }
                 });
                 const list = document.getElementById('contacts');
@@ -163,7 +153,8 @@
                 Object.keys(users).forEach(email => {
                     const div = document.createElement('div');
                     div.className = `user-item ${targetEmail === email ? 'active' : ''}`;
-                    div.innerHTML = `<img src="${users[email].photo}"><br><small>${users[email].name.split(' ')[0]}</small>`;
+                    const nameToShow = users[email].name ? users[email].name.split(' ')[0] : 'Друг';
+                    div.innerHTML = `<img src="${users[email].photo}" class="user-avatar"><br><small>${nameToShow}</small>`;
                     div.onclick = () => {
                         targetEmail = email;
                         document.getElementById('chatArea').style.display = 'block';
@@ -183,11 +174,9 @@
                 box.innerHTML = "";
                 snap.forEach(d => {
                     const m = d.data();
-                    const isMe = (m.from === auth.currentUser.email && m.to === targetEmail);
-                    const isHe = (m.from === targetEmail && m.to === auth.currentUser.email);
-                    if (isMe || isHe) {
-                        const style = isMe ? 'sent' : 'received';
-                        box.innerHTML += `<div class="msg ${style}">${m.text}</div>`;
+                    if ((m.from === auth.currentUser.email && m.to === targetEmail) || (m.from === targetEmail && m.to === auth.currentUser.email)) {
+                        const side = m.from === auth.currentUser.email ? 'sent' : 'received';
+                        box.innerHTML += `<div class="msg ${side}">${m.text}</div>`;
                     }
                 });
                 box.scrollTop = box.scrollHeight;
@@ -205,7 +194,6 @@
             });
             inp.value = "";
         };
-
     </script>
 </body>
 </html>
